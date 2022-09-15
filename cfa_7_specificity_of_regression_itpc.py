@@ -7,6 +7,7 @@ import sys
 import numpy as np
 import joblib
 from scipy.io import loadmat
+import scipy.stats
 import mne
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 import matplotlib.pyplot as plt
@@ -99,10 +100,6 @@ for s, subject in enumerate(subject_list):
     fn_out = f"{subject}_tf_averages.joblib"
     out_file = os.path.join(path_results_specificity_itpc, fn_out)
 
-    # Skip if file exists already
-    if os.path.isfile(out_file):
-        continue
-
     print(f"\nProcessing {subject}...\n")
 
     # Load trialinfo
@@ -133,6 +130,10 @@ for s, subject in enumerate(subject_list):
     epoch_matrix_dia_after = np.zeros(
         (n_epochs_dia, len(channel_list), len(erp_times_stimlock))
     )
+
+    # Skip if file exists already
+    if os.path.isfile(out_file):
+        continue
 
     # iterate channels
     for c, channel in enumerate(channel_list):
@@ -180,7 +181,12 @@ for s, subject in enumerate(subject_list):
     for em_idx, em in enumerate(epoch_matrices):
 
         # Convert to epoch objects
-        tmp = mne.EpochsArray(em, info, tmin=tmin, baseline=baseline,)
+        tmp = mne.EpochsArray(
+            em,
+            info,
+            tmin=tmin,
+            baseline=baseline,
+        )
         tmp.set_montage(standard_1020_montage)
 
         # Calculate ITPCs for epochs
@@ -213,17 +219,99 @@ ave_tfr_dia_predicted = []
 ave_tfr_sys_cleaned = []
 ave_tfr_dia_cleaned = []
 
-# Load itpcs for all subjects
+# Load itpcs for all subjects and reorganize
 for s, subject in enumerate(subject_list):
+
+    # Load data. Dims are space x freq x time
     fn_out = f"{subject}_tf_averages.joblib"
     fn = os.path.join(path_results_specificity_itpc, fn_out)
-    data = joblib.load(fn)
-    ave_tfr_sys_before.append(data[0])
-    ave_tfr_dia_before.append(data[1])
-    ave_tfr_sys_predicted.append(data[2])
-    ave_tfr_dia_predicted.append(data[3])
-    ave_tfr_sys_cleaned.append(data[4])
-    ave_tfr_dia_cleaned.append(data[5])
+    tmp = joblib.load(fn)
 
-# Tests...
-# https://mne.tools/stable/auto_tutorials/stats-sensor-space/75_cluster_ftest_spatiotemporal.html#sphx-glr-auto-tutorials-stats-sensor-space-75-cluster-ftest-spatiotemporal-py
+    # Reorganize to time × frequencies × space and collect
+    ave_tfr_sys_before.append(np.transpose(tmp[0].data, (2, 1, 0)))
+    ave_tfr_dia_before.append(np.transpose(tmp[1].data, (2, 1, 0)))
+    ave_tfr_sys_predicted.append(np.transpose(tmp[2].data, (2, 1, 0)))
+    ave_tfr_dia_predicted.append(np.transpose(tmp[3].data, (2, 1, 0)))
+    ave_tfr_sys_cleaned.append(np.transpose(tmp[4].data, (2, 1, 0)))
+    ave_tfr_dia_cleaned.append(np.transpose(tmp[5].data, (2, 1, 0)))
+
+# Stack
+ave_tfr_sys_before = np.stack(ave_tfr_sys_before)
+ave_tfr_dia_before = np.stack(ave_tfr_sys_before)
+ave_tfr_sys_predicted = np.stack(ave_tfr_sys_before)
+ave_tfr_dia_predicted = np.stack(ave_tfr_sys_before)
+ave_tfr_sys_cleaned = np.stack(ave_tfr_sys_before)
+ave_tfr_dia_cleaned = np.stack(ave_tfr_sys_before)
+
+# Define adjacency matrix
+adjacency, channel_names = mne.channels.find_ch_adjacency(
+    ave_tfr_sys_before[0].info, ch_type="eeg"
+)
+
+# Plot adjaceny
+mne.viz.plot_ch_adjacency(ave_tfr_sys_before[0].info, adjacency, channel_names)
+
+# We are running an F test, so we look at the upper tail
+# see also: https://stats.stackexchange.com/a/73993
+tail = 1
+
+# We want to set a critical test statistic (here: F), to determine when
+# clusters are being formed. Using Scipy's percent point function of the F
+# distribution, we can conveniently select a threshold that corresponds to
+# some alpha level that we arbitrarily pick.
+alpha_cluster_forming = 0.001
+
+# For an F test we need the degrees of freedom for the numerator
+# (number of conditions - 1) and the denominator (number of observations
+# - number of conditions):
+n_conditions = 2
+n_observations = len(subject_list)
+dfn = n_conditions - 1
+dfd = n_observations - n_conditions
+
+# Note: we calculate 1 - alpha_cluster_forming to get the critical value
+# on the right tail
+f_thresh = scipy.stats.f.ppf(1 - alpha_cluster_forming, dfn=dfn, dfd=dfd)
+
+# run the cluster based permutation analysis (TODO: repair...)
+data1 = ave_tfr_sys_before
+data2 = ave_tfr_sys_cleaned
+cluster_stats = mne.stats.spatio_temporal_cluster_test([data1, data2], n_permutations=1000,
+                                             threshold=f_thresh, tail=tail,
+                                             n_jobs=-2, buffer_size=None,
+                                             adjacency=adjacency)
+
+
+F_obs, clusters, p_values, _ = cluster_stats
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
