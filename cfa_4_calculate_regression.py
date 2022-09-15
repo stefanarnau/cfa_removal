@@ -14,11 +14,11 @@ from sklearn.metrics import mean_squared_error
 from joblib import Parallel, delayed, dump
 
 # Datapaths
-path_meta = "add_path_here"  # Trialinfo, chanlocs, times
-path_in = "add_path_here"  # Prepared data eeg and ecg
-path_models = "add_path_here"  # Output path for trained models
-model_eval_path = "add_path_here"  # Evaluation results
-path_predicted_data = "add_path_here"  # Evaluation results
+path_meta = "/mnt/data_heap/ecg_removal/0_meta/"  # Trialinfo, chanlocs, times
+path_in = "/mnt/data_heap/ecg_removal/1_data_preprocessed/"  # Prepared data eeg and ecg
+path_models = "/mnt/data_heap/ecg_removal/2_models/"  # Output path for trained models
+model_eval_path = "/mnt/data_heap/ecg_removal/5_hyperparameter_tuning_evaluation/"  # Evaluation results
+path_predicted_data = "/mnt/data_heap/ecg_removal/6_predicted_data/"  # Evaluation results
 
 # Subject list
 subject_list = [

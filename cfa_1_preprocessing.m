@@ -17,7 +17,7 @@ subject_list = {'VP02', 'VP03', 'VP04', 'VP05', 'VP06', 'VP07', 'VP08', 'VP09', 
                 'VP32', 'VP33', 'VP34', 'VP35', 'VP36', 'VP37', 'VP38', 'VP39', 'VP40', 'VP41'};
 
 % Switch parts of script on/off
-to_execute = {'part1', 'part2'};
+to_execute = {'part1'};
 
 % ======================== PART1: Prepare regression data =========================
 if ismember('part1', to_execute)
