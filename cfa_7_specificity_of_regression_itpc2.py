@@ -203,7 +203,7 @@ for s, subject in enumerate(subject_list):
         )
 
         # Prune in time
-        itpc.crop(tmin=-0.5, tmax=1.2)
+        itpc.crop(tmin=-0.8, tmax=1)
 
         # Collect
         average_tfr_list.append(itpc)
@@ -232,6 +232,10 @@ for s, subject in enumerate(subject_list):
     fn_out = f"{subject}_tf_averages.joblib"
     fn = os.path.join(path_results_specificity_itpc, fn_out)
     tmp = joblib.load(fn)
+    
+    # For now, as it was messed up in tf section. Will be redundant in future computations..
+    for idx, _ in enumerate(tmp):
+        tmp[idx] = tmp[idx].crop(tmin=-0.8, tmax=1)
 
     # Reorganize to time × frequencies × space and collect data as matrices
     ave_tfr_matrices_sys_before.append(np.transpose(tmp[0].data, (2, 1, 0)))
@@ -305,6 +309,7 @@ cluster_stats_sys = mne.stats.spatio_temporal_cluster_test(
     n_jobs=-2,
     buffer_size=None,
     adjacency=tfs_adjacency,
+    out_type="mask",
 )
 F_obs_sys, clusters_sys, p_values_sys, _ = cluster_stats_sys
 
@@ -319,6 +324,7 @@ cluster_stats_dia = mne.stats.spatio_temporal_cluster_test(
     n_jobs=-2,
     buffer_size=None,
     adjacency=tfs_adjacency,
+    out_type="mask",
 )
 F_obs_dia, clusters_dia, p_values_dia, _ = cluster_stats_dia
 
@@ -330,32 +336,105 @@ adjpetasq_dia = petasq_dia - ((1 - petasq_dia) * (df_effect / df_error))
 
 # Save effect size matrices averaged across channels
 fn = os.path.join(path_results_specificity_itpc, "apes_sys.csv")
-np.savetxt(
-    fn, adjpetasq_sys.mean((2)).transpose((1, 0)), delimiter=","
-)
+np.savetxt(fn, adjpetasq_sys.mean((2)).T, delimiter=",")
+fn = os.path.join(path_results_specificity_itpc, "apes_dia.csv")
+np.savetxt(fn, adjpetasq_dia.mean((2)).T, delimiter=",")
 
 # Save ITPC matrices averaged across subjects and channels
 fn = os.path.join(path_results_specificity_itpc, "itpc_sys_before.csv")
-np.savetxt(
-    fn, ave_tfr_matrices_sys_before.mean((0, 3)).transpose((1, 0)), delimiter=","
-)
+np.savetxt(fn, ave_tfr_matrices_sys_before.mean((0, 3)).T, delimiter=",")
 fn = os.path.join(path_results_specificity_itpc, "itpc_sys_predicted.csv")
-np.savetxt(
-    fn, ave_tfr_matrices_sys_predicted.mean((0, 3)).transpose((1, 0)), delimiter=","
-)
+np.savetxt(fn, ave_tfr_matrices_sys_predicted.mean((0, 3)).T, delimiter=",")
 fn = os.path.join(path_results_specificity_itpc, "itpc_sys_cleaned.csv")
-np.savetxt(
-    fn, ave_tfr_matrices_sys_cleaned.mean((0, 3)).transpose((1, 0)), delimiter=","
-)
+np.savetxt(fn, ave_tfr_matrices_sys_cleaned.mean((0, 3)).T, delimiter=",")
 fn = os.path.join(path_results_specificity_itpc, "itpc_dia_before.csv")
-np.savetxt(
-    fn, ave_tfr_matrices_dia_before.mean((0, 3)).transpose((1, 0)), delimiter=","
-)
+np.savetxt(fn, ave_tfr_matrices_dia_before.mean((0, 3)).T, delimiter=",")
 fn = os.path.join(path_results_specificity_itpc, "itpc_dia_predicted.csv")
-np.savetxt(
-    fn, ave_tfr_matrices_dia_predicted.mean((0, 3)).transpose((1, 0)), delimiter=","
-)
+np.savetxt(fn, ave_tfr_matrices_dia_predicted.mean((0, 3)).T, delimiter=",")
 fn = os.path.join(path_results_specificity_itpc, "itpc_dia_cleaned.csv")
-np.savetxt(
-    fn, ave_tfr_matrices_dia_cleaned.mean((0, 3)).transpose((1, 0)), delimiter=","
-)
+np.savetxt(fn, ave_tfr_matrices_dia_cleaned.mean((0, 3)).T, delimiter=",")
+
+# Identify significant clusters
+cluster_p = 0.005
+
+# For sys
+clu_sig_sys = []
+for cl_idx, cl_p in enumerate(p_values_sys):
+    if cl_p < cluster_p:
+        clu_sig_sys.append(clusters_sys[cl_idx])
+        
+# Save cluster outlines
+for cl_idx, cl_mask in enumerate(clu_sig_sys):
+    fn = os.path.join(
+        path_results_specificity_itpc, f"cluster_sys_outline_{cl_idx+1}.csv"
+    )
+    np.savetxt(fn, np.ceil(cl_mask.mean((2)).T), delimiter=",")
+
+# For dia
+clu_sig_dia = []
+for cl_idx, cl_p in enumerate(p_values_dia):
+    if cl_p < cluster_p:
+        clu_sig_dia.append(clusters_dia[cl_idx])
+
+# Save cluster outlines
+for cl_idx, cl_mask in enumerate(clu_sig_dia):
+    fn = os.path.join(
+        path_results_specificity_itpc, f"cluster_dia_outline_{cl_idx+1}.csv"
+    )
+    np.savetxt(fn, np.ceil(cl_mask.mean((2)).T), delimiter=",")
+    
+# Get time indices for systolic and diastolic R-peak
+idx_time_sys = np.argmin(np.abs(times - (-0.23)))
+idx_time_dia = np.argmin(np.abs(times - (-0.53)))
+idx_time_zero = np.argmin(np.abs(times - 0))
+idx_time_stim = np.argmin(np.abs(times - 0.2))
+
+# Dia time
+pd = ave_tfr_matrices_sys_before.mean((0, 2))[idx_time_dia, :]
+mne.viz.plot_topomap(pd, ave_tfr_sys_before[0].info, vmin=0, vmax=0.3, cmap='cubehelix')
+
+# Sys time
+pd = ave_tfr_matrices_sys_before.mean((0, 2))[idx_time_sys, :]
+mne.viz.plot_topomap(pd, ave_tfr_sys_before[0].info, vmin=0, vmax=0.3, cmap='cubehelix')
+
+pd = ave_tfr_matrices_sys_cleaned.mean((0, 2))[idx_time_zero, :]
+mne.viz.plot_topomap(pd, ave_tfr_sys_before[0].info, vmin=0, vmax=0.3, cmap='cubehelix')  
+
+# Sys cleaned
+pd = ave_tfr_matrices_sys_cleaned.mean((0, 2))[idx_time_stim, :]
+mne.viz.plot_topomap(pd, ave_tfr_sys_before[0].info, vmin=0, vmax=0.3, cmap='cubehelix')
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
