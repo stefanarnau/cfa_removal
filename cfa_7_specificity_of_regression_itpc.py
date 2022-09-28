@@ -3,24 +3,17 @@
 
 # Imports
 import os
-import sys
 import numpy as np
 import joblib
 from scipy.io import loadmat
 import scipy.stats
 import mne
-from mpl_toolkits.axes_grid1 import make_axes_locatable
-import matplotlib.pyplot as plt
 
 # Paths
 path_predicted_data = "/mnt/data_heap/ecg_removal/6_predicted_data/"
 path_file = "/home/plkn/repos/cfa_removal/"
 path_meta = "/mnt/data_heap/ecg_removal/0_meta/"
 path_results_specificity_itpc = "/mnt/data_heap/ecg_removal/7_results/itpc/"
-
-# insert path to color module
-sys.path.insert(1, path_file)
-from cool_colormaps import cga_p3_light as ccm
 
 # Load channel XY-coordinates
 channel_coords = loadmat(os.path.join(path_meta, "channel_coords.mat"))[
@@ -203,7 +196,7 @@ for s, subject in enumerate(subject_list):
         )
 
         # Prune in time
-        itpc.crop(tmin=-0.5, tmax=1.2)
+        itpc.crop(tmin=-0.8, tmax=1)
 
         # Collect
         average_tfr_list.append(itpc)
@@ -232,6 +225,10 @@ for s, subject in enumerate(subject_list):
     fn_out = f"{subject}_tf_averages.joblib"
     fn = os.path.join(path_results_specificity_itpc, fn_out)
     tmp = joblib.load(fn)
+    
+    # For now, as it was messed up in tf section. Will be redundant in future computations..
+    for idx, _ in enumerate(tmp):
+        tmp[idx] = tmp[idx].crop(tmin=-0.8, tmax=1)
 
     # Reorganize to time × frequencies × space and collect data as matrices
     ave_tfr_matrices_sys_before.append(np.transpose(tmp[0].data, (2, 1, 0)))
@@ -269,8 +266,6 @@ mne.viz.plot_ch_adjacency(ave_tfr_sys_before[0].info, adjacency, channel_names)
 
 # Define adjacencies for tf-space, and tf only
 tfs_adjacency = mne.stats.combine_adjacency(len(freqs), len(times), adjacency)
-tf_adjacency = mne.stats.combine_adjacency(len(freqs), len(times))
-
 
 # We are running an F test, so we look at the upper tail
 # see also: https://stats.stackexchange.com/a/73993
@@ -305,6 +300,7 @@ cluster_stats_sys = mne.stats.spatio_temporal_cluster_test(
     n_jobs=-2,
     buffer_size=None,
     adjacency=tfs_adjacency,
+    out_type="mask",
 )
 F_obs_sys, clusters_sys, p_values_sys, _ = cluster_stats_sys
 
@@ -319,6 +315,7 @@ cluster_stats_dia = mne.stats.spatio_temporal_cluster_test(
     n_jobs=-2,
     buffer_size=None,
     adjacency=tfs_adjacency,
+    out_type="mask",
 )
 F_obs_dia, clusters_dia, p_values_dia, _ = cluster_stats_dia
 
@@ -330,32 +327,114 @@ adjpetasq_dia = petasq_dia - ((1 - petasq_dia) * (df_effect / df_error))
 
 # Save effect size matrices averaged across channels
 fn = os.path.join(path_results_specificity_itpc, "apes_sys.csv")
-np.savetxt(
-    fn, adjpetasq_sys.mean((2)).transpose((1, 0)), delimiter=","
-)
+np.savetxt(fn, adjpetasq_sys.mean((2)).T, delimiter=",")
+fn = os.path.join(path_results_specificity_itpc, "apes_dia.csv")
+np.savetxt(fn, adjpetasq_dia.mean((2)).T, delimiter=",")
 
 # Save ITPC matrices averaged across subjects and channels
 fn = os.path.join(path_results_specificity_itpc, "itpc_sys_before.csv")
-np.savetxt(
-    fn, ave_tfr_matrices_sys_before.mean((0, 3)).transpose((1, 0)), delimiter=","
-)
+np.savetxt(fn, ave_tfr_matrices_sys_before.mean((0, 3)).T, delimiter=",")
 fn = os.path.join(path_results_specificity_itpc, "itpc_sys_predicted.csv")
-np.savetxt(
-    fn, ave_tfr_matrices_sys_predicted.mean((0, 3)).transpose((1, 0)), delimiter=","
-)
+np.savetxt(fn, ave_tfr_matrices_sys_predicted.mean((0, 3)).T, delimiter=",")
 fn = os.path.join(path_results_specificity_itpc, "itpc_sys_cleaned.csv")
-np.savetxt(
-    fn, ave_tfr_matrices_sys_cleaned.mean((0, 3)).transpose((1, 0)), delimiter=","
-)
+np.savetxt(fn, ave_tfr_matrices_sys_cleaned.mean((0, 3)).T, delimiter=",")
 fn = os.path.join(path_results_specificity_itpc, "itpc_dia_before.csv")
-np.savetxt(
-    fn, ave_tfr_matrices_dia_before.mean((0, 3)).transpose((1, 0)), delimiter=","
-)
+np.savetxt(fn, ave_tfr_matrices_dia_before.mean((0, 3)).T, delimiter=",")
 fn = os.path.join(path_results_specificity_itpc, "itpc_dia_predicted.csv")
-np.savetxt(
-    fn, ave_tfr_matrices_dia_predicted.mean((0, 3)).transpose((1, 0)), delimiter=","
-)
+np.savetxt(fn, ave_tfr_matrices_dia_predicted.mean((0, 3)).T, delimiter=",")
 fn = os.path.join(path_results_specificity_itpc, "itpc_dia_cleaned.csv")
-np.savetxt(
-    fn, ave_tfr_matrices_dia_cleaned.mean((0, 3)).transpose((1, 0)), delimiter=","
+np.savetxt(fn, ave_tfr_matrices_dia_cleaned.mean((0, 3)).T, delimiter=",")
+
+# Identify significant clusters
+cluster_p = 0.005
+
+# For sys
+clu_sig_sys = []
+for cl_idx, cl_p in enumerate(p_values_sys):
+    if cl_p < cluster_p:
+        clu_sig_sys.append(clusters_sys[cl_idx])
+        
+# Save cluster outlines
+for cl_idx, cl_mask in enumerate(clu_sig_sys):
+    fn = os.path.join(
+        path_results_specificity_itpc, f"cluster_sys_outline_{cl_idx+1}.csv"
+    )
+    np.savetxt(fn, np.ceil(cl_mask.mean((2)).T), delimiter=",")
+
+# For dia
+clu_sig_dia = []
+for cl_idx, cl_p in enumerate(p_values_dia):
+    if cl_p < cluster_p:
+        clu_sig_dia.append(clusters_dia[cl_idx])
+
+# Save cluster outlines
+for cl_idx, cl_mask in enumerate(clu_sig_dia):
+    fn = os.path.join(
+        path_results_specificity_itpc, f"cluster_dia_outline_{cl_idx+1}.csv"
+    )
+    np.savetxt(fn, np.ceil(cl_mask.mean((2)).T), delimiter=",")
+    
+# Get evoked objects from effect size matrices, averaged across frequencies, for topo plotting
+apes_evoked_sys = mne.EvokedArray(adjpetasq_sys.mean((1)).T / 1000000, ave_tfr_sys_before[0].info, tmin=-0.8)
+apes_evoked_dia = mne.EvokedArray(adjpetasq_dia.mean((1)).T / 1000000, ave_tfr_sys_before[0].info, tmin=-0.8)
+
+# Topo times
+times = np.arange(-0.8, 0.3, 0.1)
+
+# Plot and save sys topo series
+fig = apes_evoked_sys.plot_topomap(ch_type='eeg', times=times, colorbar=False, cmap="Oranges", vmin=-0, vmax=0.6)
+fig.savefig(
+    os.path.join(
+        path_results_specificity_itpc, "topo_apes_sys.png"
+    ),
+    dpi=300,
+    transparent=True,
 )
+
+# Plot and save dia topo series
+fig = apes_evoked_dia.plot_topomap(ch_type='eeg', times=times, colorbar=False, cmap="Oranges", vmin=-0, vmax=0.6)
+fig.savefig(
+    os.path.join(
+        path_results_specificity_itpc, "topo_apes_dia.png"
+    ),
+    dpi=300,
+    transparent=True,
+)
+
+    
+
+  
+
+
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
