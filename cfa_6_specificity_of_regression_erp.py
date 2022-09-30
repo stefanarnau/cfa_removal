@@ -584,37 +584,17 @@ for i_clu, clu_idx in enumerate(significant_cluster_idx):
         dpi=300,
         transparent=True,
     )
-    
-# Create epoch objects from effect size arrays
-apes_sys = mne.EvokedArray(
-    adjpetasq_sys.T / 1000000,
-    info,
-    tmin=tmin,
-    baseline=None,
-)
-apes_dia = mne.EvokedArray(
-    adjpetasq_dia.T,
-    info,
-    tmin=tmin,
-    baseline=None,
-)  
-    
+     
 # Plot stim-locked grand averages
 xlim = [-0.7, 0.7]
-ylim = [-0.5, 0.7]
-topomap_times = [-0.23, 0, 0.17, 0.3]
+ylim = [-0.15, 0.9]
 
-ts_args = dict(gfp=True, xlim=xlim, ylim=dict(eeg=ylim))
+
+ts_args = dict(gfp=False, xlim=xlim, ylim=dict(eeg=ylim), units=dict(eeg='η²', grad='fT/cm', mag='fT'))
 topomap_args = dict(sensors=False, cmap="Oranges", vmin=ylim[0], vmax=ylim[1])
 
-apes_sys.plot_joint(
-    title=None,
-    ts_args=ts_args,
-    topomap_args=topomap_args,
-    times=topomap_times,
-    show=False,
-)
-
+# Create and save apes sys plot
+topomap_times = [-0.6, -0.3, -0.23, -0.15, 0, 0.2]
 apes_sys = ga_sys_before
 apes_sys.data = adjpetasq_sys.T / 1000000
 apes_sys.plot_joint(
@@ -624,14 +604,26 @@ apes_sys.plot_joint(
     times=topomap_times,
     show=False,
 )
-
-
-
 plt.savefig(
     os.path.join(path_results_specificity, "apes_erp_sys.png"),
     dpi=300,
     transparent=True,
 )
-    
-    
+
+# Create and save apes dia plot
+topomap_times = [-0.53, -0.45, -0.3, -0.15, 0, 0.4]
+apes_dia = ga_dia_before
+apes_dia.data = adjpetasq_dia.T / 1000000
+apes_dia.plot_joint(
+    title=None,
+    ts_args=ts_args,
+    topomap_args=topomap_args,
+    times=topomap_times,
+    show=False,
+)
+plt.savefig(
+    os.path.join(path_results_specificity, "apes_erp_dia.png"),
+    dpi=300,
+    transparent=True,
+)
     
