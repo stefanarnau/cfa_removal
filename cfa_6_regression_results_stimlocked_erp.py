@@ -1,6 +1,12 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
+# -----------------------------------------------------------------------------------------
+# This script plots the results from the CFA-removal in terms of ERPs for stimulus-locked
+# epochs.
+# -----------------------------------------------------------------------------------------
+
+
 # Imports
 import os
 import sys
@@ -12,10 +18,10 @@ from mpl_toolkits.axes_grid1 import make_axes_locatable
 import matplotlib.pyplot as plt
 
 # Paths
-path_predicted_data = "/mnt/data_heap/ecg_removal/6_predicted_data/"
-path_file = "/home/plkn/repos/cfa_removal/"
-path_meta = "/mnt/data_heap/ecg_removal/0_meta/"
-path_results_specificity = "/mnt/data_heap/ecg_removal/7_results/"
+path_predicted_data = "add_path_here"
+path_file = "add_path_here"
+path_meta = "add_path_here"
+path_results_specificity = "add_path_here"
 
 # insert path to color module
 sys.path.insert(1, path_file)

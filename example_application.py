@@ -8,17 +8,17 @@ from scipy.io import loadmat
 import matplotlib.pyplot as plt
 
 # Import cfa removal module
-path_file = "path_to_module"
+path_file = "path_to_module" # Insert path to "remove_cfa" folder.
 sys.path.insert(1, path_file)
-from cfa_removal import cfa_removal
+from remove_cfa import remove_cfa
 
 # Datapath
-path_in = "/mnt/data_heap/ecg_removal/1_data_preprocessed/"
+path_in = "path_to_preprocessed data"
 
 
 # Example subject and channel
-subj = "VP02"
-chan = 40
+subj = "VP02" # Subject identifier
+chan = 40 # Channel number as integer
 
 # Load training data
 X_data_rlocked = np.asarray(

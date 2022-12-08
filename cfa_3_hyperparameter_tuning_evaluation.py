@@ -1,6 +1,10 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
+# -----------------------------------------------------------------------------------------
+# This script evaluates the results from the grid search.
+# -----------------------------------------------------------------------------------------
+
 # Imports
 import os
 import sys

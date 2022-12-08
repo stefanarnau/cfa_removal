@@ -1,14 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-"""
-
-Stefan Arnau
-December 2021
-email: arnau@ifado.de
-
-"""
-
 # Imports
 import numpy as np
 from sklearn.preprocessing import StandardScaler

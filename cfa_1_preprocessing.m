@@ -1,4 +1,12 @@
+% Clean up residuals
 clear all;
+
+% -----------------------------------------------------------------------------------------
+% This script performs the preprocessing of the EEG data. The result are cleaned data
+% of stimulus-locked epochs and R-peak-locked epochs. For the latter, only R-peaks are
+% consideres that precede nor follow an experimental (visual) stimulation. The stimulus and
+% R-peak-locked data has time x epoch dimensionality.
+% -----------------------------------------------------------------------------------------
 
 % Path vars
 PATH_RAW             = 'add_path_here';
@@ -214,8 +222,7 @@ if ismember('part1', to_execute)
 
 end % End part1
 
-
-% ======================== PART2: Preprocessing statistics and simplified trialinfo for specificity evaluation =========================
+% ======================== PART2: Preprocessing statistics and save a less complex trialinfo for evaluation purposes =========================
 if ismember('part2', to_execute)
 
     % Init eeglab and find chanlocfile

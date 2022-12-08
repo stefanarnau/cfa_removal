@@ -1,6 +1,11 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
+# -----------------------------------------------------------------------------------------
+# This script plots the results from the CFA-removal in terms of ERPs for R-locked epochs
+# (epochs without experimental stimulation).
+# -----------------------------------------------------------------------------------------
+
 # Imports
 import os
 import sys

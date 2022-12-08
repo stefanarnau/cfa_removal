@@ -1,6 +1,11 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
+# -----------------------------------------------------------------------------------------
+# This script plots the results from the CFA-removal in terms of ITPCs for stimulus-locked
+# epochs.
+# -----------------------------------------------------------------------------------------
+
 # Imports
 import os
 import numpy as np
@@ -10,10 +15,10 @@ import scipy.stats
 import mne
 
 # Paths
-path_predicted_data = "/mnt/data_heap/ecg_removal/6_predicted_data/"
-path_file = "/home/plkn/repos/cfa_removal/"
-path_meta = "/mnt/data_heap/ecg_removal/0_meta/"
-path_results_specificity_itpc = "/mnt/data_heap/ecg_removal/7_results/itpc/"
+path_predicted_data = "add_path_here"
+path_file = "add_path_here"
+path_meta = "add_path_here"
+path_results_specificity_itpc = "add_path_here"
 
 # Load channel XY-coordinates
 channel_coords = loadmat(os.path.join(path_meta, "channel_coords.mat"))[

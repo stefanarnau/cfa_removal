@@ -1,6 +1,12 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
+# -----------------------------------------------------------------------------------------
+# This script performs a grid-search to investigate a set of hyperparameters for the neural
+# network that offers minimal loss for the test data without increasing training time too
+# much. 
+# -----------------------------------------------------------------------------------------
+
 # Imports
 import os
 from scipy.io import loadmat
