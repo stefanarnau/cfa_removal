@@ -5,6 +5,7 @@
 import os
 import sys
 from scipy.io import loadmat
+from scipy.io import savemat
 import matplotlib.pyplot as plt
 
 # Import cfa removal module
@@ -13,8 +14,8 @@ sys.path.insert(1, path_file)
 from remove_cfa import remove_cfa
 
 # Datapath
-path_in = "path_to_preprocessed data"
-
+path_in = "path_to_preprocessed_data"
+path_out = "path_for_results"
 
 # Example subject and channel
 subjects = ["VP02"]  # List of subject identifiers
@@ -72,10 +73,11 @@ for subj in subjects:
             n_obs_train=1000000,
         )
 
-
-# Plot
-plt.plot(y_data_stimlocked_2d.mean(axis=1), label="contaminated", color="r")
-plt.plot(y_stimlocked_predicted_2d.mean(axis=1), label="predicted", color="k")
-plt.plot(y_stimlocked_clean_2d.mean(axis=1), label="cleaned", color="g")
-plt.legend()
-plt.show()
+        # Save data matlab compatible
+        data_out = {
+            "contaminated": y_data_stimlocked_2d,
+            "predicted": y_stimlocked_predicted_2d,
+            "cleaned": y_stimlocked_clean_2d,
+        }
+        fn_out = os.path.join(path_in, f"{subj}_channel_{chan}")
+        savemat(fn_out, data_out)
