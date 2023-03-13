@@ -25,7 +25,7 @@ subject_list = {'VP02', 'VP03', 'VP04', 'VP05', 'VP06', 'VP07', 'VP08', 'VP09', 
                 'VP32', 'VP33', 'VP34', 'VP35', 'VP36', 'VP37', 'VP38', 'VP39', 'VP40', 'VP41'};
 
 % Switch parts of script on/off
-to_execute = {'part1'};
+to_execute = {'part2'};
 
 % ======================== PART1: Prepare regression data =========================
 if ismember('part1', to_execute)
@@ -52,7 +52,7 @@ if ismember('part1', to_execute)
         EEG.event_R_nolock = get_R_nolock_events(EEG);
 
         % Get stimulus locked event structure
-        EEG.event_stimlocked = get_stim_events(EEG, id, PATH_FORCE, [61, 62]);
+        [EEG.event_stimlocked, n_trials_all, n_trials_bad_latency] = get_stim_events(EEG, id, PATH_FORCE, [61, 62]);
 
         % Drop forcechannels
         EEG = pop_select(EEG, 'nochannel', [61, 62]);

@@ -17,10 +17,10 @@ from mpl_toolkits.axes_grid1 import make_axes_locatable
 import matplotlib.pyplot as plt
 
 # Paths
-path_predicted_data = "add_path_here"
-path_file = "add_path_here"
-path_meta = "add_path_here"
-path_results_efficacy = "add_path_here"
+path_predicted_data = "/mnt/data_heap/ecg_removal/6_predicted_data/"
+path_file = "/home/plkn/repos/cfa_removal/"
+path_meta = "/mnt/data_heap/ecg_removal/0_meta/"
+path_results_efficacy = "/mnt/data_heap/ecg_removal/7_results/"
 
 # insert path to color module
 sys.path.insert(1, path_file)
@@ -177,12 +177,39 @@ ga_rlock_before = mne.grand_average(evokeds_rlock_before)
 ga_rlock_predicted = mne.grand_average(evokeds_rlock_predicetd)
 ga_rlock_after = mne.grand_average(evokeds_rlock_after)
 
+# Choose channels 
+channel_list = ["FCz", "PO7", "PO8"]
+
+# Get indices
+channel_idx = [i for i, x in enumerate(channel_names) if x in channel_list]
+
+# Loop datasets
+ts_before = []
+for evoked in evokeds_rlock_before:
+    ts_before.append(evoked.data[channel_idx, :].mean(axis=0) * 1e6)
+    
+ts_after = [] 
+for evoked in evokeds_rlock_after:
+    ts_after.append(evoked.data[channel_idx, :].mean(axis=0) * 1e6)
+    
+# Stack
+ts_before = np.stack(ts_before)
+ts_after = np.stack(ts_after)
+    
+# Save
+ts_stats_before = np.vstack((ts_before.mean(axis=0), ts_before.std(axis=0))).T
+ts_stats_after = np.vstack((ts_after.mean(axis=0), ts_after.std(axis=0))).T
+ts_times = ga_rlock_after.times
+np.savetxt(os.path.join(path_results_efficacy, "residual_times.csv"), ts_times, delimiter="\t")
+np.savetxt(os.path.join(path_results_efficacy, "interindividual_variance_before.csv"), ts_stats_before, delimiter="\t")
+np.savetxt(os.path.join(path_results_efficacy, "interindividual_variance_after.csv"), ts_stats_after, delimiter="\t")
+
 # Plot r-locked grand averages
 xlim = [-0.2, 0.4]
 ylim = [-5, 7]
 topomap_times = [-0.02, 0.01, 0.25]
 ts_args = dict(gfp=True, xlim=xlim, ylim=dict(eeg=ylim))
-topomap_args = dict(sensors=False, cmap=ccm, vmin=ylim[0], vmax=ylim[1])
+topomap_args = dict(sensors=False, cmap=ccm, vlim=(ylim[0], ylim[1]))
 
 ga_rlock_before.plot_joint(
     title=None,
@@ -221,6 +248,8 @@ plt.savefig(
     transparent=True,
 )
 
+
+aa=bb
 # Define adjacency matrix
 adjacency, channel_names = mne.channels.find_ch_adjacency(
     epochs_rlock_before.info, ch_type="eeg"

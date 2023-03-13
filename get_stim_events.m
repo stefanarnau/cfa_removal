@@ -1,4 +1,4 @@
-function[S] = get_stim_events(EEG, id, forcepath, forcechans)
+function[S, n_trials_all, n_trials_bad_latency] = get_stim_events(EEG, id, forcepath, forcechans)
 
     % Define crrect response stimlabels
     stimlabsl = {};
@@ -225,5 +225,11 @@ function[S] = get_stim_events(EEG, id, forcepath, forcechans)
             todrop(end + 1) = c;
         end
     end
+
+    % Count trials
+    n_trials_all = numel(S);
+    n_trials_bad_latency = length(todrop);
+
+    % Drop bad latency trials
     S(todrop) = [];
 end
